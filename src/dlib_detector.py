@@ -1,4 +1,3 @@
-
 import dlib
 import cv2
 
@@ -9,13 +8,11 @@ def load_image(image_path):
     if image is None:
         raise FileNotFoundError(f"Could not load image: {image_path}")
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    return image, gray
+    return image
 
 
-def detect_face(gray, detector):
-    faces = detector(gray, 1)
+def detect_face(image, detector):
+    faces = detector(image, 1)
 
     if len(faces) == 0:
         raise RuntimeError("No face detected!")
@@ -25,8 +22,8 @@ def detect_face(gray, detector):
     return faces[0]
 
 
-def extract_landmarks(gray, face, predictor):
-    landmarks = predictor(gray, face)
+def extract_landmarks(image, face, predictor):
+    landmarks = predictor(image, face)
 
     print(f"Number of landmarks: {landmarks.num_parts}")
 
@@ -73,9 +70,9 @@ def main():
     image_path = "data/images/test.jpg"
     output_path = "results/dlib/dlib_test_result.jpg"
 
-    image, gray = load_image(image_path)
-    face = detect_face(gray, detector)
-    landmarks = extract_landmarks(gray, face, predictor)
+    image = load_image(image_path)
+    face = detect_face(image, detector)
+    landmarks = extract_landmarks(image, face, predictor)
 
     result = draw_results(image, face, landmarks)
 
