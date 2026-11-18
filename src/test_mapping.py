@@ -6,8 +6,10 @@ import dlib
 import mediapipe as mp
 
 from landmark_mapping import wflw_98_to_68, mediapipe_468_to_68, mediapipe_468_to_68_v2
+from evaluation import calculate_nme, calculate_nme_per_region
 
-image_path = "data/WFLW/WFLW_images/12--Group/12_Group_Large_Group_12_Group_Large_Group_12_832.jpg"
+# image_path = "data/WFLW/WFLW_images/12--Group/12_Group_Large_Group_12_Group_Large_Group_12_832.jpg"
+image_path = "data/WFLW/WFLW_images/18--Concerts/18_Concerts_Concerts_18_803.jpg"
 
 image = cv2.imread(image_path)
 
@@ -45,9 +47,6 @@ gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
 faces = detector(gray, 1)
 
-if len(faces) == 0:
-    raise ValueError("dlib nu a detectat nicio față.")
-
 face = faces[0]
 
 shape = predictor(gray, face)
@@ -68,9 +67,6 @@ with mp_face_mesh.FaceMesh(
 ) as face_mesh:
 
     results = face_mesh.process(image)
-
-if not results.multi_face_landmarks:
-    raise ValueError("MediaPipe nu a detectat nicio față.")
 
 face_landmarks = results.multi_face_landmarks[0]
 
@@ -97,17 +93,17 @@ plt.imshow(image)
 
 plt.scatter(
     landmarks_68[:, 0], landmarks_68[:, 1],
-    s=4, c="cyan", label="WFLW - 68"
+    s=5, c="cyan", label="WFLW - 68"
 )
 
 plt.scatter(
     landmarks_dlib[:, 0], landmarks_dlib[:, 1],
-    s=4, c="red", label="dlib - 68"
+    s=5, c="red", label="dlib - 68"
 )
 
 plt.scatter(
     landmarks_mp_68[:, 0], landmarks_mp_68[:, 1],
-    s=4, c="lime", label="MediaPipe - 68"
+    s=5, c="lime", label="MediaPipe - 68"
 )
 
 # for i, (x, y) in enumerate(landmarks_68):
@@ -119,3 +115,30 @@ plt.scatter(
 plt.legend()
 plt.axis("off")
 plt.show()
+
+# nme
+nme_dlib = calculate_nme(landmarks_68, landmarks_dlib)
+nme_mediapipe = calculate_nme(landmarks_68, landmarks_mp_68)
+
+print(f"dlib NME: {nme_dlib:.4f} ({nme_dlib * 100:.2f}%)")
+print(f"MediaPipe NME: {nme_mediapipe:.4f} ({nme_mediapipe * 100:.2f}%)")
+
+nme_dlib_regions = calculate_nme_per_region(
+    landmarks_68, landmarks_dlib
+)
+
+nme_mp_regions = calculate_nme_per_region(
+    landmarks_68, landmarks_mp_68
+)
+
+print("\nNME per region:")
+
+for region in nme_dlib_regions:
+    dlib_error = nme_dlib_regions[region] * 100
+    mp_error = nme_mp_regions[region] * 100
+
+    print(
+        f"{region}: "
+        f"dlib = {dlib_error:.2f}%, "
+        f"MediaPipe = {mp_error:.2f}%"
+    )
